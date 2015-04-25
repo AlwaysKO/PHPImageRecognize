@@ -10,7 +10,12 @@ class ImageRecognize {
 	/**
 	* The information of the new image which has been clear
 	*/
-	public $imgsize;
+	private $imgsize;
+
+	/**
+	* The real-time image resource
+	*/
+	private $imgres;
 
 	/**
 	* The length of the code
@@ -51,6 +56,11 @@ class ImageRecognize {
 	* The distance of the each of word
 	*/
 	const WORD_DISTANCE = 0;
+
+	/**
+	* The min probability value
+	*/
+	const MIN_PROBABILITY = 95.0;
 
 	/**
 	* The references table of the words
@@ -101,17 +111,25 @@ class ImageRecognize {
 		$this->imgpath = $imgpath;
 	}
 
+	public function __destruct() {
+		imagedestroy($this->imgres);
+	}
+
 	/**
 	* Recognizing the source image
 	*
 	* @return the string of the verification code which in the image
 	*/
 	public function recognize() {
-		$dest = $this->imgclean();
+		$this->imgres = $this->imgclean();
 
-		$dataArray = $this->imgbinary($dest);
+		$dataArray = $this->imgbinary($this->imgres);
 
-		// $dataArray = $this->imgbinary($res);
+		return $this->imgmatch($dataArray);
+	}
+
+	public function save() {
+		imagejpeg($this->imgres, md5(date('H:i:s')).'.jpg');
 	}
 
 	/**
@@ -120,7 +138,7 @@ class ImageRecognize {
 	* @param $border Specify the size of the border
 	* @return The new image data
 	*/
-	public function imgclean($border = 1) {
+	private function imgclean($border = 1) {
 		$dec = $border + 1;
 
 		// Give the information of the source image
@@ -145,7 +163,7 @@ class ImageRecognize {
 	*
 	* @return the two-dimension array data which has the filter data
 	*/
-	public function imgbinary($image) {
+	private function imgbinary($image) {
 		$data = [];
 		for($i = 0; $i < $this->imgsize[self::IMG_HEIGHT]; ++$i)
 		{
@@ -200,11 +218,37 @@ class ImageRecognize {
 	/**
 	* Find out the each of the element in the filter data
 	*/
-	public function imgmatch($dataArray) {
+	private function imgmatch($dataArray) {
+		$code = '';
+		$result = [];
 		// split the image
 		for ($i = 0; $i < self::NUM_OF_CODE; $i++) { 
-			
+			$x = $i * (self::WORD_WIDTH + self::WORD_DISTANCE) + self::OFFSET_X;
+			$y = self::OFFSET_Y;
+
+			$maxHeight = self::WORD_HEIGHT - self::OFFSET_Y;
+			$maxWidth = $x + self::WORD_WIDTH;
+
+			for($height = $y; $height < $maxHeight; $height++) {
+				for ($width = $x; $width < $maxWidth; $width++) { 
+					$result[$i] .= $dataArray[$height][$width];
+				}
+			}
 		}
+
+		foreach ($result as $value) {
+			foreach (self::REFERENCES_WORDS as $element => $data) {
+				$percent = 0.0;
+				similar_text($data, $value, $percent);
+				if($percent > self::MIN_PROBABILITY)
+				{
+					$code .= $element;
+					break;
+				}
+			}
+		}
+
+		return $code;
 	}
 
 }

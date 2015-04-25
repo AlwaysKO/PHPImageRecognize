@@ -2,7 +2,7 @@
 
 include '../src/ImageRecognize.class.php';
 
-$imgpath = 'forz.jpg';
+/*$imgpath = 'forz.jpg';
 $imgRecognize = new ImageRecognize($imgpath);
 $data = $imgRecognize->recognize();
 $result = '';
@@ -17,7 +17,7 @@ for($i=2; $i < $imgRecognize->imgsize[1]; ++$i)
     $buffer .= $result;
     echo $result.'<br/>';
 }
-/*$imgRecognize->imgsize = getimagesize($imgpath);
+$imgRecognize->imgsize = getimagesize($imgpath);
 $res = imagecreatefromjpeg($imgpath);
 
 
@@ -25,6 +25,11 @@ $res = imagecreatefromjpeg($imgpath);
 imagedestroy($res);
 
 */
-?>
+$imgpath = 'http://jwxt.jmpt.cn:8125/JspHelloWorld/authImg';
+$imgRecognize = new ImageRecognize($imgpath);
+echo 'code: ' . $imgRecognize->recognize();
+echo '<br/>';
 
-<textarea rows="12" cols="70"><?php echo str_replace('<br/>', '', $buffer)?></textarea>
+$imgRecognize->save();
+
+?>
