@@ -2,20 +2,29 @@
 
 include '../src/ImageRecognize.class.php';
 
-$imgpath = 'w.jpg';
+$imgpath = 'forz.jpg';
 $imgRecognize = new ImageRecognize($imgpath);
-$imgRecognize->imgsize = getimagesize($imgpath);
-$res = imagecreatefromjpeg($imgpath);
-
-$arr = $imgRecognize->imgbinary($res);
+$data = $imgRecognize->recognize();
+$result = '';
+$buffer = '';
 for($i=2; $i < $imgRecognize->imgsize[1]; ++$i)
 {
+	$result = '';
     for($j=0; $j < $imgRecognize->imgsize[0]; ++$j)
     {
-	    echo $arr[$i][$j];
+	    $result .= $data[$i][$j];
     }
-    echo '<br />';
+    $buffer .= $result;
+    echo $result.'<br/>';
 }
+/*$imgRecognize->imgsize = getimagesize($imgpath);
+$res = imagecreatefromjpeg($imgpath);
+
+
 
 imagedestroy($res);
 
+*/
+?>
+
+<textarea rows="12" cols="70"><?php echo str_replace('<br/>', '', $buffer)?></textarea>
