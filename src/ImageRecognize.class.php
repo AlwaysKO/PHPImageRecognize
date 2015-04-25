@@ -60,7 +60,7 @@ class ImageRecognize {
 	/**
 	* The min probability value
 	*/
-	const MIN_PROBABILITY = 95.0;
+	const MIN_PROBABILITY = 99.0;
 
 	/**
 	* The references table of the words
@@ -122,14 +122,12 @@ class ImageRecognize {
 	*/
 	public function recognize() {
 		$this->imgres = $this->imgclean();
-
-		$dataArray = $this->imgbinary($this->imgres);
-
-		return $this->imgmatch($dataArray);
+		// Seeking echo of word
+		return $this->imgseek($this->imgres);
 	}
 
-	public function save() {
-		imagejpeg($this->imgres, md5(date('H:i:s')).'.jpg');
+	public function save($path = '') {
+		imagejpeg($this->imgres, $path . md5(date('H:i:s')).'.jpg');
 	}
 
 	/**
@@ -163,11 +161,11 @@ class ImageRecognize {
 	*
 	* @return the two-dimension array data which has the filter data
 	*/
-	private function imgbinary($image) {
+	private function imgbinary($image, $width, $height) {
 		$data = [];
-		for($i = 0; $i < $this->imgsize[self::IMG_HEIGHT]; ++$i)
+		for($i = 0; $i < $height; ++$i)
 		{
-			for($j = 0; $j < $this->imgsize[self::IMG_WIDTH]; ++$j)
+			for($j = 0; $j < $width; ++$j)
 			{
 				$rgb = imagecolorat($image, $j, $i);
 				$rgbarray = imagecolorsforindex($image, $rgb);
@@ -182,9 +180,9 @@ class ImageRecognize {
 		}
 
 		// Clear the interferential pixel
-		for($i = 0; $i < $this->imgsize[self::IMG_HEIGHT]; ++$i)
+		for($i = 0; $i < $height; ++$i)
 		{
-			for($j = 0; $j < $this->imgsize[self::IMG_WIDTH]; ++$j)
+			for($j = 0; $j < $width; ++$j)
 			{
 				$channel = 0;
 				if ($data[$i][$j] == 1) {
@@ -218,37 +216,63 @@ class ImageRecognize {
 	/**
 	* Find out the each of the element in the filter data
 	*/
-	private function imgmatch($dataArray) {
-		$code = '';
-		$result = [];
-		// split the image
-		for ($i = 0; $i < self::NUM_OF_CODE; $i++) { 
-			$x = $i * (self::WORD_WIDTH + self::WORD_DISTANCE) + self::OFFSET_X;
-			$y = self::OFFSET_Y;
+	private function imgmatch($data) {
+		$result = '';
 
-			$maxHeight = self::WORD_HEIGHT - self::OFFSET_Y;
-			$maxWidth = $x + self::WORD_WIDTH;
-
-			for($height = $y; $height < $maxHeight; $height++) {
-				for ($width = $x; $width < $maxWidth; $width++) { 
-					$result[$i] .= $dataArray[$height][$width];
-				}
-			}
-		}
-
-		foreach ($result as $value) {
-			foreach (self::REFERENCES_WORDS as $element => $data) {
-				$percent = 0.0;
-				similar_text($data, $value, $percent);
-				if($percent > self::MIN_PROBABILITY)
-				{
-					$code .= $element;
+		$max = 0.0;
+		foreach (self::REFERENCES_WORDS as $key => $value) {
+			$percent = 0.0;
+			similar_text($data, $value, $percent);
+			if($percent > $max)
+			{
+				$max = $percent;
+				$result = $key;
+				if($max >= self::MIN_PROBABILITY) {
 					break;
 				}
 			}
 		}
+		return $result;
+	}
+
+	/**
+	* Spliting the image to the special count
+	*/
+	private function imgseek($image) {
+		$code = '';
+		$height = self::WORD_HEIGHT - self::OFFSET_Y;
+
+		// split the image
+		for ($i = 0; $i < self::NUM_OF_CODE; $i++) { 
+			$x = $i * (self::WORD_WIDTH + self::WORD_DISTANCE) + self::OFFSET_X;
+			// Give the single word
+			$block = imagecreatetruecolor(self::WORD_WIDTH, $height);
+			imagecopy($block, $image, 0, 0, $x, self::OFFSET_Y, self::WORD_WIDTH, $height);
+
+			$data = $this->imgbinary($block, self::WORD_WIDTH, $height);
+			$data = $this->array_tostring($data, self::WORD_WIDTH, $height);
+
+			$code .= $this->imgmatch($data);
+
+			imagedestroy($block);
+		}
 
 		return $code;
+	}
+
+	/**
+	* Interate the char of the two-dimension array
+	*/
+	private function array_tostring($data, $width, $height) {
+		$result = '';
+		for($i = 0; $i < $height; ++$i)
+		{
+			for($j = 0; $j < $width; ++$j)
+			{
+				$result .= $data[$i][$j];
+			}
+		}
+		return $result;
 	}
 
 }

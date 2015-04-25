@@ -27,9 +27,8 @@ imagedestroy($res);
 */
 $imgpath = 'http://jwxt.jmpt.cn:8125/JspHelloWorld/authImg';
 $imgRecognize = new ImageRecognize($imgpath);
-echo 'code: ' . $imgRecognize->recognize();
-echo '<br/>';
-
-$imgRecognize->save();
-
+echo $imgRecognize->recognize();
+/*echo 'code: ' . $imgRecognize->recognize();
+echo '<br/>';*/
+$imgRecognize->save('blocks/');
 ?>
